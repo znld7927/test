@@ -2,81 +2,178 @@ package com.robpercival.doraemonrun;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Rectangle;
+
 import java.util.Random;
+
 
 public class DoraemonRun extends ApplicationAdapter {
 	SpriteBatch batch;
 	Texture background;
-	Texture[] doraemons;
+	//ShapeRenderer shapeRenderer;
+
+	Texture[] birds;
 	int flapState = 0;
-	float doraemonY = 0;
+	float birdY = 0;
 	float velocity = 0;
+	Circle birdCircle;
+
 	int gameState = 0;
-	float gravity =2;
-	float gap = 400;
-	float maxTubeOffSet;
-	Random randomGenerator;
-	float tubeOffset;
+	float gravity = 2;
 
 	Texture topTube;
 	Texture bottomTube;
+	float gap = 400;
+	float maxTubeOffset;
+	Random randomGenerator;
+	float tubeVelocity = 4;
+	int numberOfTubes = 4;
+	float[] tubeX = new float[numberOfTubes];
+	float[] tubeOffset = new float[numberOfTubes];
+	float distanceBetweenTubes;
+	Rectangle[] topTubeRectangles;
+	Rectangle[] bottomTubeRectangles;
+
+
 
 	@Override
-	public void create() {
+	public void create () {
 		batch = new SpriteBatch();
 		background = new Texture("bg.png");
-		doraemons = new Texture[2];
-		doraemons[0] = new Texture("doraemon.png");
-		doraemons[1] = new Texture("doraemon2.png");
-		doraemonY = Gdx.graphics.getHeight() / 2 - doraemons[flapState].getHeight() / 2;
+		//shapeRenderer = new ShapeRenderer();
+		birdCircle = new Circle();
 
-		topTube = new Texture("toptube.png");
+		birds = new Texture[2];
+		birds[0] = new Texture("doraemon.png");
+		birds[1] = new Texture("doraemon2.png");
+		birdY = Gdx.graphics.getHeight() / 2 - birds[0].getHeight() / 2;
+
+
 		bottomTube = new Texture("bottomtube.png");
-		maxTubeOffSet = Gdx.graphics.getHeight()/2 - gap/2-100;
+		maxTubeOffset = Gdx.graphics.getHeight() / 2 - gap / 2 - 100;
 		randomGenerator = new Random();
+		distanceBetweenTubes = Gdx.graphics.getWidth() * 3 / 4;
+
+		bottomTubeRectangles = new Rectangle[numberOfTubes];
+
+		for (int i = 0; i < numberOfTubes; i++) {
+
+			tubeOffset[i] = (randomGenerator.nextFloat() - 0.5f) * (Gdx.graphics.getHeight() - gap - 200);
+
+			tubeX[i] =  Gdx.graphics.getWidth() + i * distanceBetweenTubes;
+
+
+			bottomTubeRectangles[i] = new Rectangle();
+
+		}
+
+
+
+
+
 	}
 
 	@Override
-	public void render() {
+	public void render () {
+
 		batch.begin();
 		batch.draw(background, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
 		if (gameState != 0) {
+
 			if (Gdx.input.justTouched()) {
-				velocity = -25;
-				tubeOffset = (randomGenerator.nextFloat()-0.5f)* (Gdx.graphics.getHeight()-gap-200);
 
-
+				velocity = -30;
 
 			}
 
-			batch.draw(topTube,Gdx.graphics.getWidth() /2 - topTube.getWidth()/2, Gdx.graphics.getHeight()/2 + gap/2 + tubeOffset);
-			batch.draw(bottomTube,Gdx.graphics.getWidth() / 2 - bottomTube.getWidth()/2, Gdx.graphics.getHeight()/2 - gap/2 - bottomTube.getHeight() + tubeOffset);
+			for (int i = 0; i < numberOfTubes; i++) {
+
+				if (tubeX[i] < - bottomTube.getWidth()) {
+
+					tubeX[i] += numberOfTubes * distanceBetweenTubes;
+					tubeOffset[i] = (randomGenerator.nextFloat() - 0.5f) * (Gdx.graphics.getHeight() - gap - 200);
+
+				} else {
+
+					tubeX[i] = tubeX[i] - tubeVelocity;
+
+				}
+
+
+				batch.draw(bottomTube, tubeX[i], Gdx.graphics.getHeight() / 2 - gap / 2 - bottomTube.getHeight() + tubeOffset[i]);
+
+
+				bottomTubeRectangles[i] = new Rectangle(tubeX[i], Gdx.graphics.getHeight() / 2 - gap / 2 - bottomTube.getHeight() + tubeOffset[i], bottomTube.getWidth(), bottomTube.getHeight());
+			}
 
 
 
-			if(doraemonY > 0 || velocity < 0) {
+			if (birdY > 0 || velocity < 0) {
 
 				velocity = velocity + gravity;
-				doraemonY -= velocity;
+				birdY -= velocity;
+
 			}
-		}else{
+
+		} else {
+
 			if (Gdx.input.justTouched()) {
+
 				gameState = 1;
+
 			}
+
 		}
+
 		if (flapState == 0) {
 			flapState = 1;
 		} else {
 			flapState = 0;
 		}
 
-		batch.draw(doraemons[flapState], Gdx.graphics.getWidth() / 2 - doraemons[flapState].getWidth() / 2, doraemonY);
+
+
+		batch.draw(birds[flapState], Gdx.graphics.getWidth() / 2 - birds[flapState].getWidth() / 2, birdY);
 		batch.end();
+
+		birdCircle.set(Gdx.graphics.getWidth() / 2, birdY + birds[flapState].getHeight() / 2, birds[flapState].getWidth() / 2);
+
+
+		//shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+		//shapeRenderer.setColor(Color.RED);
+		//shapeRenderer.circle(birdCircle.x, birdCircle.y, birdCircle.radius);
+
+		for (int i = 0; i < numberOfTubes; i++) {
+
+			//shapeRenderer.rect(tubeX[i], Gdx.graphics.getHeight() / 2 + gap / 2 + tubeOffset[i], topTube.getWidth(), topTube.getHeight());
+			//shapeRenderer.rect(tubeX[i], Gdx.graphics.getHeight() / 2 - gap / 2 - bottomTube.getHeight() + tubeOffset[i], bottomTube.getWidth(), bottomTube.getHeight());
+
+
+			if (Intersector.overlaps(birdCircle, bottomTubeRectangles[i])) {
+
+				Gdx.app.log("Collision", "Yes!");
+
+			}
+
+		}
+
+
+		//shapeRenderer.end();
+
+
+
 	}
+
+
 
 	@Override
 	public void dispose () {
