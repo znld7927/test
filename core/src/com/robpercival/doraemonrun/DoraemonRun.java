@@ -26,7 +26,7 @@ public class DoraemonRun extends ApplicationAdapter {
 	float gap = 400;
 	float maxTubeOffSet;
 	Random randomGenerator;
-	float tubeVelocity = 4;
+	float tubeVelocity = 10;
 	int numberOfTubes = 4;
 	float[] tubeX = new float[numberOfTubes];
 	float[] tubeOffset = new float[numberOfTubes];
@@ -37,6 +37,7 @@ public class DoraemonRun extends ApplicationAdapter {
 	int score = 0;
 	int scoringTube = 0;
 	BitmapFont font;
+	Texture gameOver;
 
 	//Texture topTube;
 	Texture bottomTube;
@@ -48,12 +49,13 @@ public class DoraemonRun extends ApplicationAdapter {
 		doraemons = new Texture[2];
 		doraemons[0] = new Texture("doraemon.png");
 		doraemons[1] = new Texture("doraemon2.png");
-		doraemonY = Gdx.graphics.getHeight() / 2 - doraemons[flapState].getHeight() / 2;
+
 		shapeRenderer = new ShapeRenderer();
 		doraemonCircle = new Circle();
 		font = new BitmapFont();
 		font.setColor(Color.WHITE);
 		font.getData().setScale(5);
+		gameOver = new Texture("gameover.png");
 
 		//topTube = new Texture("toptube.png");
 		bottomTube = new Texture("bottomtube.png");
@@ -62,25 +64,30 @@ public class DoraemonRun extends ApplicationAdapter {
 		distanceBetweenTubes = Gdx.graphics.getWidth()*3/4;
 		bottomtubeRectangles = new Rectangle[numberOfTubes];
 
+		doraemonY = Gdx.graphics.getHeight() / 2 - doraemons[flapState].getHeight() / 2;
+		startGame();
+
+
+	}
+
+	public void startGame(){
+		doraemonY = Gdx.graphics.getHeight() / 2 - doraemons[flapState].getHeight() / 2;
+
 
 		for(int i = 0; i<numberOfTubes; i++){
 			tubeOffset[i] = (randomGenerator.nextFloat() - 0.5f) * (Gdx.graphics.getHeight() - gap -200);
 
-			tubeX[i] =  Gdx.graphics.getWidth()+ i *distanceBetweenTubes;
+			tubeX[i] =  Gdx.graphics.getWidth()+ i * distanceBetweenTubes;
 			bottomtubeRectangles[i] = new Rectangle();
-
-
-
 		}
 
 	}
-
 	@Override
 	public void render() {
 		batch.begin();
 		batch.draw(background, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-		if (gameState != 0) {
+		if (gameState == 1) {
 			if(tubeX[scoringTube] < Gdx.graphics.getWidth() / 2 ){
 				score ++;
 				Gdx.app.log("Score", String.valueOf(score));
@@ -114,15 +121,29 @@ public class DoraemonRun extends ApplicationAdapter {
 
 			}
 
-			if(doraemonY > 0 || velocity < 0) {
+			if(doraemonY > 0 ) {
 
 				velocity = velocity + gravity;
 				doraemonY -= velocity;
+			}else {
+				gameState = 2;
 			}
-		}else{
+		}else if(gameState==0){
+
 			if (Gdx.input.justTouched()) {
 				gameState = 1;
 			}
+		}else if( gameState == 2){
+			batch.draw(gameOver,Gdx.graphics.getWidth()/2-gameOver.getWidth()/2,Gdx.graphics.getHeight()/2-gameOver.getHeight()/2);
+
+			if (Gdx.input.justTouched()) {
+				gameState = 1;
+				startGame();
+				score = 0;
+				scoringTube = 0;
+				velocity=0;
+			}
+
 		}
 		if (flapState == 0) {
 			flapState = 1;
@@ -146,7 +167,7 @@ public class DoraemonRun extends ApplicationAdapter {
 			//bottomTube.getHeight());
 
 			if(Intersector.overlaps(doraemonCircle, bottomtubeRectangles[i])){
-				Gdx.app.log("Collision","doraemon!");
+				gameState = 2;
 			}
 		}
 		//shapeRenderer.end();
